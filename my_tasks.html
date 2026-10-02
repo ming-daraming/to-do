@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Tasks ✨</title>
+    <!-- 트렌디한 반짝이(Sparkle) 파비콘 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- SortableJS (드래그 앤 드롭 기능) -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    
+    <!-- Pretendard 폰트 -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            /* 트렌디한 소프트 파스텔 그라데이션 (베이비 블루 ~ 소프트 핑크 ~ 연보라) */
+            background: linear-gradient(135deg, #e0f2fe 0%, #fce7f3 50%, #f3e8ff 100%);
+            background-attachment: fixed;
+        }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(192, 132, 252, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(192, 132, 252, 0.6); }
+
+        /* 드래그 앤 드롭 시각 효과 */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #f8fafc;
+            border: 1px dashed #d8b4fe; /* 연보라색 대시보더 */
+        }
+        .sortable-drag {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            cursor: grabbing !important;
+            opacity: 1 !important;
+            background: rgba(255,255,255,0.95) !important;
+            backdrop-filter: blur(8px);
+            transform: scale(1.01);
+        }
+        
+        input, select, button { transition: all 0.2s ease-in-out; }
+        
+        /* 모던하고 미니멀한 커스텀 체크박스 */
+        input[type="checkbox"] {
+            appearance: none;
+            background-color: #f8fafc;
+            margin: 0;
+            color: currentColor;
+            width: 1.15em;
+            height: 1.15em;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 0.3em;
+            display: grid;
+            place-content: center;
+            cursor: pointer;
+        }
+        input[type="checkbox"]::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            transform: scale(0);
+            transition: 120ms transform cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 1em 1em white;
+            background-color: white;
+            transform-origin: center;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+        input[type="checkbox"]:checked {
+            background-color: #c084fc; /* 소프트 연보라 */
+            border-color: #c084fc;
+        }
+        input[type="checkbox"]:checked::before {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="text-slate-700 h-screen flex flex-col p-4 md:p-8 items-center justify-center antialiased">
+
+    <div class="w-full max-w-2xl bg-white/60 backdrop-blur-2xl rounded-3xl shadow-[0_8px_32px_0_rgba(192,132,252,0.1)] border border-white/80 overflow-hidden flex flex-col h-full max-h-[800px]">
+        
+        <!-- 헤더 영역 -->
+        <div class="px-6 py-5 flex justify-between items-center border-b border-purple-100/30">
+            <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                My Tasks ✨
+            </h1>
+            <div id="date-display" class="hidden sm:inline-flex items-center justify-center px-4 py-1.5 bg-white/50 rounded-full text-xs font-bold text-indigo-400 tracking-wide shadow-sm border border-indigo-50"></div>
+        </div>
+
+        <!-- 할 일 입력 폼 -->
+        <div class="px-6 py-4 bg-white/30 border-b border-purple-50">
+            <form id="todo-form" class="flex flex-col sm:flex-row gap-2">
+                <!-- 1. 주제 선택 -->
+                <select id="category-input" required
+                        class="px-3 py-2 rounded-xl border border-indigo-50 shadow-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-200 outline-none bg-white text-slate-600 text-sm font-medium cursor-pointer sm:w-28">
+                    <option value="Buy">Buy 🛒</option>
+                    <option value="예약">예약 📅</option>
+                    <option value="Check">Check ✔️</option>
+                </select>
+
+                <!-- 2. 내용 입력 -->
+                <div class="flex-1">
+                    <input type="text" id="task-input" required placeholder="무엇을 해야 할까요?" 
+                           class="w-full px-4 py-2 rounded-xl border border-indigo-50 shadow-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-200 outline-none placeholder:text-slate-300 text-slate-700 text-sm font-medium bg-white">
+                </div>
+
+                <!-- 3. 날짜 선택 -->
+                <input type="date" id="date-input" required
+                       class="px-3 py-2 rounded-xl border border-indigo-50 shadow-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-200 outline-none text-slate-500 text-sm font-medium bg-white cursor-pointer sm:w-32">
+
+                <!-- 4. 추가 버튼 -->
+                <button type="submit" 
+                        class="bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 hover:from-indigo-400 hover:via-purple-400 hover:to-pink-400 text-white text-sm font-bold px-5 py-2 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 whitespace-nowrap">
+                    Add
+                </button>
+            </form>
+        </div>
+
+        <!-- 탭 및 버튼 영역 -->
+        <div class="flex flex-col sm:flex-row justify-between items-center px-6 pt-3 pb-2 border-b border-purple-50 bg-white/20 gap-3">
+            <div class="flex gap-4">
+                <button id="tab-active" class="pb-2 border-b-[2.5px] border-purple-400 text-purple-600 font-bold text-sm transition-all cursor-pointer">할 일</button>
+                <button id="tab-completed" class="pb-2 border-b-[2.5px] border-transparent text-slate-400 font-medium text-sm hover:text-purple-400 transition-all cursor-pointer">완료됨</button>
+            </div>
+            <div class="flex gap-2">
+                <button id="cleanup-btn" class="flex items-center gap-1 text-xs font-semibold text-pink-500 hover:text-pink-600 bg-white hover:bg-pink-50 px-3 py-1.5 rounded-lg transition-all shadow-sm border border-pink-100">
+                    ✨ 완료된 항목 정리
+                </button>
+                <button id="sort-date-btn" class="flex items-center gap-1 text-xs font-semibold text-indigo-500 hover:text-indigo-600 bg-white hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-all shadow-sm border border-indigo-100">
+                    📅 날짜순 정렬
+                </button>
+            </div>
+        </div>
+
+        <!-- 리스트 영역 -->
+        <div class="flex-1 overflow-y-auto px-5 py-3 bg-transparent relative">
+            <ul id="todo-list" class="space-y-1.5">
+                <!-- 할 일 항목들이 동적으로 추가됩니다 -->
+            </ul>
+            
+            <!-- 빈 상태 (Empty State) -->
+            <div id="empty-state" class="hidden h-full flex-col items-center justify-center text-slate-300 mt-10 pb-10">
+                <div class="text-4xl mb-3 opacity-50">☁️</div>
+                <p id="empty-text" class="text-sm font-semibold text-slate-400">모든 할 일을 마쳤어요!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 상태 관리
+        let tasks = [];
+        let currentTab = 'active'; 
+        const STORAGE_KEY = 'mytasks_sparkle_data';
+
+        const categoryEmojis = { 
+            'Buy': '🛒', 
+            '예약': '📅', 
+            'Check': '✔️' 
+        };
+
+        // DOM 요소
+        const form = document.getElementById('todo-form');
+        const taskInput = document.getElementById('task-input');
+        const dateInput = document.getElementById('date-input');
+        const categoryInput = document.getElementById('category-input');
+        const todoList = document.getElementById('todo-list');
+        const sortDateBtn = document.getElementById('sort-date-btn');
+        const cleanupBtn = document.getElementById('cleanup-btn');
+        const emptyState = document.getElementById('empty-state');
+        const emptyText = document.getElementById('empty-text');
+        const dateDisplay = document.getElementById('date-display');
+        
+        const tabActive = document.getElementById('tab-active');
+        const tabCompleted = document.getElementById('tab-completed');
+
+        function init() {
+            const today = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
+            dateDisplay.textContent = today.toLocaleDateString('ko-KR', options);
+            
+            // Local timezone 기준으로 yyyy-mm-dd 포맷팅
+            const offset = today.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(today - offset)).toISOString().split('T')[0];
+            dateInput.value = localISOTime;
+
+            const savedTasks = localStorage.getItem(STORAGE_KEY);
+            if (savedTasks) {
+                tasks = JSON.parse(savedTasks);
+            }
+
+            setupTabs();
+            renderTasks();
+            initSortable();
+        }
+
+        function saveTasks() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+        }
+
+        function setupTabs() {
+            tabActive.addEventListener('click', () => {
+                currentTab = 'active';
+                tabActive.className = 'pb-2 border-b-[2.5px] border-purple-400 text-purple-600 font-bold text-sm transition-all cursor-pointer';
+                tabCompleted.className = 'pb-2 border-b-[2.5px] border-transparent text-slate-400 font-medium text-sm hover:text-purple-400 transition-all cursor-pointer';
+                cleanupBtn.style.display = 'flex';
+                renderTasks();
+            });
+
+            tabCompleted.addEventListener('click', () => {
+                currentTab = 'completed';
+                tabCompleted.className = 'pb-2 border-b-[2.5px] border-purple-400 text-purple-600 font-bold text-sm transition-all cursor-pointer';
+                tabActive.className = 'pb-2 border-b-[2.5px] border-transparent text-slate-400 font-medium text-sm hover:text-purple-400 transition-all cursor-pointer';
+                cleanupBtn.style.display = 'none';
+                renderTasks();
+            });
+        }
+
+        function renderTasks() {
+            todoList.innerHTML = '';
+            
+            const visibleTasks = tasks.filter(task => 
+                currentTab === 'active' ? !task.archived : task.archived
+            );
+            
+            visibleTasks.forEach(task => {
+                const li = document.createElement('li');
+                // 슬림하고 컴팩트한 디자인 적용 (py-2 px-3)
+                li.className = `todo-item group flex items-center py-2 px-3 bg-white/80 border border-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ${task.completed ? 'bg-slate-50/40 opacity-75' : ''}`;
+                li.dataset.id = task.id;
+
+                const emoji = categoryEmojis[task.category] || '✨';
+
+                /* 
+                 * 엄격한 순서: [이모티콘] -> [체크박스] -> [내용] -> [날짜] -> [삭제버튼(선택적)] -> [드래그 핸들]
+                 */
+                li.innerHTML = `
+                    <div class="flex items-center gap-2.5 w-full">
+                        <!-- 1. 이모티콘만 표시 -->
+                        <span class="shrink-0 text-base flex items-center justify-center text-slate-600 w-6 h-6" title="${task.category}">
+                            ${emoji}
+                        </span>
+
+                        <!-- 2. 체크박스 -->
+                        <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${task.id}')"
+                               class="shrink-0 transition-all">
+                        
+                        <!-- 3. 내용 -->
+                        <span class="flex-1 truncate text-sm font-medium text-slate-700 ${task.completed ? 'line-through text-slate-400' : ''}">
+                            ${task.text}
+                        </span>
+                        
+                        <!-- 4. 날짜 -->
+                        <span class="shrink-0 text-[11px] font-semibold text-slate-400 bg-slate-100/60 px-2 py-0.5 rounded">
+                            ${task.date}
+                        </span>
+                        
+                        <!-- 삭제 버튼 -->
+                        <button onclick="deleteTask('${task.id}')" class="shrink-0 p-1 text-slate-300 hover:text-rose-400 transition-colors focus:outline-none rounded-md" title="삭제">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        <!-- 5. 맨 오른쪽 드래그 핸들 ☰ -->
+                        <div class="drag-handle shrink-0 pl-1 pr-0.5 text-slate-300 hover:text-purple-400 cursor-grab active:cursor-grabbing transition-colors" title="순서 변경">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </div>
+                    </div>
+                `;
+                todoList.appendChild(li);
+            });
+
+            // 빈 화면 처리
+            if (visibleTasks.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                emptyText.textContent = currentTab === 'active' ? '새로운 할 일을 추가해보세요!' : '정리된 할 일이 없습니다.';
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+            }
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = taskInput.value.trim();
+            const date = dateInput.value;
+            const category = categoryInput.value;
+
+            if (!text || !date || !category) return;
+
+            tasks.push({
+                id: Date.now().toString(),
+                text: text,
+                date: date,
+                category: category,
+                completed: false,
+                archived: false
+            });
+
+            saveTasks();
+            
+            if (currentTab === 'completed') tabActive.click(); 
+            else renderTasks();
+
+            taskInput.value = '';
+            taskInput.focus();
+        });
+
+        window.deleteTask = function(id) {
+            tasks = tasks.filter(task => task.id !== id);
+            saveTasks();
+            renderTasks();
+        };
+
+        window.toggleTask = function(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                
+                // 완료 탭에서 체크 해제 시 다시 할 일 탭으로 복귀
+                if (currentTab === 'completed' && !task.completed) {
+                    task.archived = false;
+                }
+                saveTasks();
+                renderTasks();
+            }
+        };
+
+        cleanupBtn.addEventListener('click', () => {
+            let movedCount = 0;
+            tasks.forEach(task => {
+                if (task.completed && !task.archived) {
+                    task.archived = true;
+                    movedCount++;
+                }
+            });
+
+            if (movedCount > 0) {
+                saveTasks();
+                renderTasks();
+                
+                const originalText = cleanupBtn.innerHTML;
+                cleanupBtn.innerHTML = `✨ ${movedCount}개 이동됨!`;
+                setTimeout(() => cleanupBtn.innerHTML = originalText, 1500);
+            }
+        });
+
+        function initSortable() {
+            new Sortable(todoList, {
+                animation: 200,
+                easing: "cubic-bezier(1, 0, 0, 1)",
+                handle: '.drag-handle', // ☰ 아이콘으로만 드래그 가능
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                onEnd: function () {
+                    const listItems = Array.from(todoList.querySelectorAll('.todo-item'));
+                    const visibleIds = listItems.map(item => item.dataset.id);
+                    
+                    const visibleTasks = visibleIds.map(id => tasks.find(t => t.id === id));
+                    const hiddenTasks = tasks.filter(t => !visibleIds.includes(t.id));
+                    
+                    const newTasksOrder = currentTab === 'active' 
+                        ? [...visibleTasks, ...hiddenTasks] 
+                        : [...hiddenTasks, ...visibleTasks];
+                    
+                    tasks = newTasksOrder; 
+                    saveTasks(); 
+                }
+            });
+        }
+
+        sortDateBtn.addEventListener('click', () => {
+            sortDateBtn.classList.add('scale-95', 'bg-indigo-100');
+            setTimeout(() => sortDateBtn.classList.remove('scale-95', 'bg-indigo-100'), 150);
+
+            tasks.sort((a, b) => new Date(a.date) - new Date(b.date));
+            saveTasks();
+            renderTasks();
+        });
+
+        // 앱 시작
+        init();
+    </script>
+</body>
+</html>
