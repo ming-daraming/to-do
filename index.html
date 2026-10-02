@@ -78,6 +78,11 @@
         input[type="checkbox"]:checked::before {
             transform: scale(1);
         }
+
+        /* 날짜 입력창 캘린더 피커 커서 지정 */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="text-slate-700 h-screen flex flex-col p-4 md:p-8 items-center justify-center antialiased">
@@ -236,12 +241,13 @@
                 const emoji = categoryEmojis[task.category] || '✨';
 
                 /* 
-                 * 엄격한 순서: [이모티콘] -> [체크박스] -> [내용] -> [날짜] -> [삭제버튼(선택적)] -> [드래그 핸들]
+                 * 순서 유지: [이모티콘] -> [체크박스] -> [내용] -> [수정 가능한 날짜 배지] -> [삭제버튼] -> [드래그 핸들]
+                 * 날짜 부분: 이모티콘 없이 깔끔한 텍스트 배지이며 클릭 시 즉시 달력 피커가 열려 날짜 수정 가능
                  */
                 li.innerHTML = `
                     <div class="flex items-center gap-2.5 w-full">
                         <!-- 1. 이모티콘만 표시 -->
-                        <span class="shrink-0 text-base flex items-center justify-center text-slate-600 w-6 h-6" title="${task.category}">
+                        <span class="shrink-0 text-base flex items-center justify-center text-slate-600 w-6 h-6 select-none" title="${task.category}">
                             ${emoji}
                         </span>
 
@@ -254,13 +260,19 @@
                             ${task.text}
                         </span>
                         
-                        <!-- 4. 날짜 -->
-                        <span class="shrink-0 text-[11px] font-semibold text-slate-400 bg-slate-100/60 px-2 py-0.5 rounded">
-                            ${task.date}
-                        </span>
+                        <!-- 4. 수정 가능한 날짜 배지 (이모티콘 제외, 클릭 시 달력 피커 동작) -->
+                        <div class="relative shrink-0 group/date">
+                            <span class="inline-block text-[11px] font-semibold text-slate-500 group-hover/date:text-purple-600 bg-slate-100/70 group-hover/date:bg-purple-50 px-2 py-0.5 rounded cursor-pointer transition-colors">
+                                ${task.date}
+                            </span>
+                            <input type="date" value="${task.date}" 
+                                   onchange="updateTaskDate('${task.id}', this.value)"
+                                   title="클릭하여 날짜 수정"
+                                   class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                        </div>
                         
                         <!-- 삭제 버튼 -->
-                        <button onclick="deleteTask('${task.id}')" class="shrink-0 p-1 text-slate-300 hover:text-rose-400 transition-colors focus:outline-none rounded-md" title="삭제">
+                        <button onclick="deleteTask('${task.id}')" class="shrink-0 p-1 text-slate-300 hover:text-rose-400 transition-colors focus:outline-none rounded-md cursor-pointer" title="삭제">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -313,6 +325,16 @@
             taskInput.value = '';
             taskInput.focus();
         });
+
+        // 날짜 인라인 수정 함수
+        window.updateTaskDate = function(id, newDate) {
+            const task = tasks.find(t => t.id === id);
+            if (task && newDate) {
+                task.date = newDate;
+                saveTasks();
+                renderTasks();
+            }
+        };
 
         window.deleteTask = function(id) {
             tasks = tasks.filter(task => task.id !== id);
